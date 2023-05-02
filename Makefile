@@ -9,3 +9,6 @@ lint:
 
 nws:
 	npx webpack serve
+
+build:
+	NODE_ENV=production npx webpack
