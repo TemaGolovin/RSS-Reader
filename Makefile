@@ -2,7 +2,7 @@ install:
 	npm ci
 
 link:
-	npm link
+	sudo npm link
 
 lint:
 	npx eslint .
