@@ -1,13 +1,8 @@
+import { renderReadedPosts } from './updater.js';
+
 const printText = (text) => {
-  if (text.childNodes[0].textContent.startsWith('<')) {
-    const tmp = text.childNodes[0].textContent.split('[')[2];
-    return tmp.split(']')[0];
-  }
-  if (text.textContent) {
-    return text.textContent;
-  }
-  if (text.childNodes[0].nodeName === '#comment') {
-    const tmp = text.childNodes[0].textContent.split('[')[2];
+  if (text.startsWith('<') || text.startsWith('[')) {
+    const tmp = text.split('[')[2];
     return tmp.split(']')[0];
   }
   return text;
@@ -54,12 +49,44 @@ const renderPostsAndFeeds = (elements, state, i18next) => {
       'border-end-0',
     );
     liPost.innerHTML = `<a href=${
-      post.link.textContent
-    } class="fw-bold" target="_blank">${printText(post.title)}</a>
-       <button type="button" class="btn btn-outline-primary btn-sm">${i18next.t(
-    'view',
-  )}</button>`;
+      post.link
+    } class="fw-bold" target="_blank" data-id=${post.id}>${printText(
+      post.title,
+    )}</a>
+       <button type="button" class="btn btn-outline-primary btn-sm" data-id=${
+  post.id
+} data-bs-toggle="modal" data-bs-target="#modal">${i18next.t(
+  'view',
+)}</button>`;
     ulPosts.prepend(liPost);
+  });
+  renderReadedPosts(state.uiState.readedPostsId, ulPosts);
+  ulPosts.addEventListener('click', (ev) => {
+    const { id } = ev.target.dataset;
+    if (state.uiState.readedPostsId.includes(id)) {
+      return;
+    }
+    state.uiState.readedPostsId.push(id);
+    renderReadedPosts(state.uiState.readedPostsId, ulPosts);
+  });
+};
+
+const renderModal = (elements, state) => {
+  const btnView = document.querySelectorAll('[data-bs-target="#modal"]');
+  btnView.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const modalTitel = document.querySelector('.modal-title');
+      const modalDescription = document.querySelector('.modal-body');
+      const modalBtnLink = document.querySelector('.btn-modal-link');
+      const postId = btn.dataset.id;
+      state.resultContentLoding.posts.forEach((post) => {
+        if (postId === post.id) {
+          modalTitel.textContent = printText(post.title);
+          modalDescription.textContent = printText(post.description);
+          modalBtnLink.href = post.link;
+        }
+      });
+    });
   });
 };
 
@@ -72,7 +99,6 @@ export default (elements, state, i18next) => (path, value) => {
         elements.feedBack.classList.remove('text-danger');
         elements.button.removeAttribute('disabled');
         elements.inputForm.removeAttribute('readonly');
-        renderPostsAndFeeds(elements, state, i18next);
         elements.form.reset();
         break;
       case 'sending':
@@ -84,7 +110,6 @@ export default (elements, state, i18next) => (path, value) => {
         elements.button.removeAttribute('disabled');
         elements.inputForm.removeAttribute('readonly');
         elements.feedBack.textContent = i18next.t(`errors.${state.error}`);
-        console.log(state.formValidity);
         if (state.formValidity === false) {
           elements.inputForm.classList.add('is-invalid');
         } else if (state.formValidity === true) {
@@ -97,5 +122,9 @@ export default (elements, state, i18next) => (path, value) => {
       default:
         break;
     }
+  }
+  if (path === 'resultContentLoding.posts') {
+    renderPostsAndFeeds(elements, state, i18next);
+    renderModal(elements, state, i18next);
   }
 };
