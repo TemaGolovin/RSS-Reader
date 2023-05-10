@@ -1,14 +1,14 @@
 import onChange from 'on-change';
 import i18next from 'i18next';
 import axios from 'axios';
-import _ from 'lodash';
+import getUniqId from './uniqId.js';
 import validate from './validator.js';
 import render from './view.js';
 import resources from './locales/index.js';
 import parser from './parser.js';
+import { updatePosts } from './updater.js';
 
 const defaultLanguage = 'ru';
-const getUniqId = () => _.uniqueId();
 
 export default () => {
   const i18nInstance = i18next.createInstance();
@@ -25,11 +25,13 @@ export default () => {
         urlFeeds: [],
         process: {
           processState: 'filling',
-          error: null,
         },
         resultContentLoding: {
           feeds: [],
           posts: [],
+        },
+        uiState: {
+          readedPostsId: [],
         },
       };
 
@@ -50,43 +52,38 @@ export default () => {
       elements.form.addEventListener('submit', (event) => {
         event.preventDefault();
         watchedState.process.processState = 'sending';
-        state.formValidity = true;
-        console.log(state);
+        watchedState.formValidity = true;
         const data = new FormData(event.target);
         const url = data.get('url').trim();
+        const proxy = 'https://allorigins.hexlet.app/get?disableCache=true&';
+        const proxyUrl = `${proxy}url=${encodeURIComponent(url)}`;
         validate(i18nInstance, url)
           .catch(() => {
             throw new Error('unvalidUrl');
           })
-          .then(() => {
-            if (state.urlFeeds.includes(url)) {
+          .then(() => axios.get(proxyUrl))
+          .then((response) => {
+            const content = parser(response.data.contents, getUniqId);
+            if (watchedState.urlFeeds.includes(url)) {
               throw new Error('doubleRss');
             } else {
               watchedState.urlFeeds.push(url);
             }
-            return axios.get(
-              `https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(
-                url,
-              )}`,
-            );
-          })
-          .then((response) => {
-            const content = parser(response.data.contents, getUniqId);
             const { parsedFeeds, posts } = content;
             watchedState.resultContentLoding.feeds.push(parsedFeeds);
             watchedState.resultContentLoding.posts = [
-              ...state.resultContentLoding.posts,
+              ...watchedState.resultContentLoding.posts,
               ...posts,
             ];
             watchedState.process.processState = 'sucsess';
+            return setTimeout(() => updatePosts(watchedState, proxyUrl, parsedFeeds.id, getUniqId));
           })
           .catch((e) => {
-            console.log(e);
             // Ошибка выбрасывается как 'Error: name err', поэтому достаем name.
             const nameErr = String(e).split(' ')[1];
             watchedState.error = nameErr;
             if (nameErr === 'unvalidUrl') {
-              state.formValidity = false;
+              watchedState.formValidity = false;
             }
             watchedState.process.processState = 'feiled';
           });
