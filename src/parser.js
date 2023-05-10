@@ -4,16 +4,22 @@ export default (data, id) => {
     const content = parser.parseFromString(data, 'text/html');
 
     const channel = content.querySelector('channel');
-    const feedTitel = channel.querySelector('title');
-    const feedDescription = channel.querySelector('description');
+    const feedTitel = channel.querySelector('title').textContent;
+    const feedDescription = channel.querySelector('description').childNodes[0].textContent;
     const parsedFeeds = { feedTitel, feedDescription, id: id() };
     const items = channel.querySelectorAll('item');
     const posts = Array.from(items).map((item) => {
-      const link = item.querySelector('link').nextSibling;
-      const title = item.querySelector('title');
-      const description = item.querySelector('description');
+      const link = item.querySelector('link').nextSibling.textContent.trim();
+      const title = item.querySelector('title').textContent;
+      const description = item.querySelector('description').childNodes[0].textContent;
+      const guid = item.querySelector('guid').textContent;
       return {
-        title, description, link, id: id(),
+        title,
+        description,
+        link,
+        id: id(),
+        feedId: parsedFeeds.id,
+        guid,
       };
     });
     return { parsedFeeds, posts };
