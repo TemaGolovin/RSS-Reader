@@ -27,9 +27,10 @@
     "eslint-plugin-import": "^2.27.5",
     "html-webpack-plugin": "^5.5.0",
     "i18next": "^22.4.15",
+    "lodash": "^4.17.21",
+    "mini-css-extract-plugin": "^2.7.5",
     "on-change": "^4.0.2",
-    "yup": "^1.1.1",
-    "lodash": "^4.17.21"
+    "yup": "^1.1.1"
   },
   "devDependencies": {
     "@webpack-cli/generators": "^3.0.1",
