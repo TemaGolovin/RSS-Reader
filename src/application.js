@@ -1,7 +1,7 @@
 import onChange from 'on-change';
 import i18next from 'i18next';
 import axios from 'axios';
-import getUniqId from './uniqId.js';
+import _ from 'lodash';
 import validate from './validator.js';
 import render from './view.js';
 import resources from './locales/index.js';
@@ -9,6 +9,7 @@ import parser from './parser.js';
 import { updatePosts } from './updater.js';
 
 const defaultLanguage = 'ru';
+const getUniqId = () => _.uniqueId();
 
 export default () => {
   const i18nInstance = i18next.createInstance();
