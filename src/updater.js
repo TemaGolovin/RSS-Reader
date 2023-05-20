@@ -1,6 +1,5 @@
 import axios from 'axios';
 import parser from './parser.js';
-import getUniqId from './uniqId.js';
 
 const renderReadedPosts = (readedPostsId, ulPosts) => {
   if (readedPostsId.length === 0) {
@@ -20,7 +19,7 @@ const updatePosts = (state, proxyUrl, id, generateIdFunc) => axios
   .get(proxyUrl)
   .then((response) => response.data.contents)
   .then((data) => {
-    const content = parser(data, getUniqId);
+    const content = parser(data, generateIdFunc);
     const { posts } = content;
     if (!posts) {
       throw new Error('Parser Error');
