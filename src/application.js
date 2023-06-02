@@ -6,10 +6,19 @@ import validate from './validator.js';
 import render from './view.js';
 import resources from './locales/index.js';
 import parser from './parser.js';
-import { updatePosts } from './updater.js';
+import updatePosts from './updater.js';
 
 const defaultLanguage = 'ru';
 const getUniqId = () => _.uniqueId();
+
+const getResponseRRS = (url) => {
+  const proxyUrl = new URL(
+    `https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(
+      url,
+    )}`,
+  );
+  return axios.get(proxyUrl);
+};
 
 export default () => {
   const i18nInstance = i18next.createInstance();
@@ -32,7 +41,7 @@ export default () => {
           posts: [],
         },
         uiState: {
-          readedPostsId: [],
+          readedPostsId: new Set(),
         },
       };
 
@@ -43,6 +52,12 @@ export default () => {
         posts: document.querySelector('.posts'),
         feeds: document.querySelector('.feeds'),
         button: document.querySelector('#add'),
+        modal: {
+          modalWindow: document.querySelector('#modal'),
+          title: document.querySelector('.modal-title'),
+          body: document.querySelector('.modal-body'),
+          button: document.querySelector('.btn-modal-link'),
+        },
       };
 
       const watchedState = onChange(
@@ -56,20 +71,11 @@ export default () => {
         watchedState.formValidity = true;
         const data = new FormData(event.target);
         const url = data.get('url').trim();
-        const proxy = 'https://allorigins.hexlet.app/get?disableCache=true&';
-        const proxyUrl = `${proxy}url=${encodeURIComponent(url)}`;
-        validate(i18nInstance, url)
-          .catch(() => {
-            throw new Error('unvalidUrl');
-          })
-          .then(() => axios.get(proxyUrl))
+        validate(watchedState, url)
+          .then(() => getResponseRRS(url))
           .then((response) => {
-            const content = parser(response.data.contents, getUniqId);
-            if (watchedState.urlFeeds.includes(url)) {
-              throw new Error('doubleRss');
-            } else {
-              watchedState.urlFeeds.push(url);
-            }
+            const content = parser(response.data.contents, getUniqId, url);
+            watchedState.urlFeeds.push(url);
             const { parsedFeeds, posts } = content;
             watchedState.resultContentLoding.feeds.push(parsedFeeds);
             watchedState.resultContentLoding.posts = [
@@ -77,7 +83,7 @@ export default () => {
               ...posts,
             ];
             watchedState.process.processState = 'sucsess';
-            return setTimeout(() => updatePosts(watchedState, proxyUrl, parsedFeeds.id, getUniqId));
+            return setTimeout(() => updatePosts(watchedState, getResponseRRS, getUniqId));
           })
           .catch((e) => {
             // Ошибка выбрасывается как 'Error: name err', поэтому достаем name.
@@ -88,6 +94,20 @@ export default () => {
             }
             watchedState.process.processState = 'feiled';
           });
+      });
+
+      elements.modal.modalWindow.addEventListener('show.bs.modal', (e) => {
+        const currentPostId = e.relatedTarget.getAttribute('data-id');
+        watchedState.uiState.readedPostsId.add(currentPostId);
+        watchedState.uiState.modalId = currentPostId;
+        console.log(watchedState.uiState.readedPostsId);
+      });
+
+      elements.posts.addEventListener('click', (e) => {
+        const currentPostId = e.target.dataset.id;
+        if (currentPostId) {
+          watchedState.uiState.readedPostsId.add(currentPostId);
+        }
       });
     });
 };
