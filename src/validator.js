@@ -1,18 +1,19 @@
 import * as yup from 'yup';
 import { setLocale } from 'yup';
 
-export default (i18next, content) => {
+export default (state, content) => {
   setLocale({
     mixed: {
       default: 'field_invalid',
+      notOneOf: 'doubleRss',
     },
     string: {
-      url: i18next.t('errors.unvalidUrl'),
-      min: i18next.t('validation.errors.emptyField'),
+      url: 'unvalidUrl',
+      min: 'emptyField',
     },
   });
 
-  const shema = yup.string().url().min(1);
+  const shema = yup.string().url().min(1).notOneOf(state.urlFeeds);
 
   return shema.validate(content);
 };
