@@ -1,11 +1,24 @@
-import { renderReadedPosts } from './updater.js';
-
 const printText = (text) => {
   if (text.startsWith('<') || text.startsWith('[')) {
     const tmp = text.split('[')[2];
     return tmp.split(']')[0];
   }
   return text;
+};
+
+const renderReadedPosts = (readedPostsId, elements) => {
+  if (readedPostsId.length === 0) {
+    return;
+  }
+  readedPostsId.forEach((idPost) => {
+    const ulPosts = elements.posts.querySelector('ul');
+    const readedPost = ulPosts.querySelector(`[data-id='${idPost}']`);
+    if (!readedPost) {
+      return;
+    }
+    readedPost.classList.remove('fw-bold');
+    readedPost.classList.add('fw-normal', 'link-secondary');
+  });
 };
 
 const renderPostsAndFeeds = (elements, state, i18next) => {
@@ -60,15 +73,7 @@ const renderPostsAndFeeds = (elements, state, i18next) => {
 )}</button>`;
     ulPosts.prepend(liPost);
   });
-  renderReadedPosts(state.uiState.readedPostsId, ulPosts);
-  ulPosts.addEventListener('click', (ev) => {
-    const { id } = ev.target.dataset;
-    if (state.uiState.readedPostsId.includes(id)) {
-      return;
-    }
-    state.uiState.readedPostsId.push(id);
-    renderReadedPosts(state.uiState.readedPostsId, ulPosts);
-  });
+  renderReadedPosts(state.uiState.readedPostsId, elements);
 };
 
 const renderModal = (elements, state) => {
@@ -126,5 +131,8 @@ export default (elements, state, i18next) => (path, value) => {
   if (path === 'resultContentLoding.posts') {
     renderPostsAndFeeds(elements, state, i18next);
     renderModal(elements, state, i18next);
+  }
+  if (path === 'uiState.readedPostsId') {
+    renderReadedPosts(value, elements);
   }
 };
