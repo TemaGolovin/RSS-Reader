@@ -1,12 +1,13 @@
-export default (data, id) => {
+export default (data, id, feedLink) => {
   try {
     const parser = new DOMParser();
     const content = parser.parseFromString(data, 'text/html');
-
     const channel = content.querySelector('channel');
     const feedTitel = channel.querySelector('title').textContent;
     const feedDescription = channel.querySelector('description').childNodes[0].textContent;
-    const parsedFeeds = { feedTitel, feedDescription, id: id() };
+    const parsedFeeds = {
+      feedTitel, feedDescription, id: id(), feedLink,
+    };
     const items = channel.querySelectorAll('item');
     const posts = Array.from(items).map((item) => {
       const link = item.querySelector('link').nextSibling.textContent.trim();
